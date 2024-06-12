@@ -7,7 +7,6 @@ from utils import load_image
 class CoTPrompt:
     image: Optional[Image.Image]
     explanation: str
-
 @dataclass
 class PromptTemplate:
     """
@@ -26,8 +25,8 @@ class PromptTemplate:
         cot_prompt = None
         if "cot_prompt" in data:
             cot_prompt_data = data["cot_prompt"]
+            image_path = cot_prompt_data.get("image_path")
             try:
-                image_path = cot_prompt_data.get("image_path")
                 image = load_image(image_path)
             except Exception as e:
                 print(f"Error loading image from path: {image_path}")
@@ -42,5 +41,3 @@ class PromptTemplate:
             prompt_suffix=data.get("prompt_suffix", ""),
             cot_prompt=cot_prompt
         )
-if __name__ == '__main__':
-    print(PromptTemplate.from_json("example_data/prompt_template_example.json"))

@@ -11,7 +11,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
-
+CONFIG_PATH = 'enrich_images/bedrock_claude_config.json'
 
 class BedrockClaudeSonnet(EnrichImageModel):
     """Encapsulates Claude 3 model invocations using the Amazon Bedrock Runtime client."""
@@ -24,10 +24,13 @@ class BedrockClaudeSonnet(EnrichImageModel):
         """
         if client is None:
             client = boto3.client(service_name="bedrock-runtime", region_name="us-east-1")
-        self.client = client
-        self.model_id = model_id
-
-    model_id = "anthropic.claude-3-sonnet-20240229-v1:0"
+        self._client = client
+        self._model_id = model_id
+        try:
+            with open(CONFIG_PATH, "r") as f:
+                self._config = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"Error loading Bedrock config: {e}")
 
     def infer(self, prompt: PromptTemplate, image: Image.Image) -> EnrichImageResult:
         content = [
@@ -59,59 +62,22 @@ class BedrockClaudeSonnet(EnrichImageModel):
                 "text": prompt.prompt_suffix,
             }
         )
-        #
-        # ,)
-        #         {
-        #             "type": "image",
-        #             "source": {
-        #                 "type": "base64",
-        #                 "media_type": "image/png",
-        #                 "data": self._encode_image_from_path(image, target_width=128, target_height=128),
-        #             },
-        #         },
-        #     {
-        #     "type": "text",
-        #     "text": f"{prompt_suffix}\n{task}",
-        # })
-        #
-        # for i in range(len(task_base64_images)):
-        #     content.append(
-        #         {
-        #             "type": "text",
-        #             "text": f"{i + 1}) ",
-        #         }
-        #     )
-        #     content.append(
-        #         {
-        #             "type": "image",
-        #             "source": {
-        #                 "type": "base64",
-        #                 "media_type": "image/png",
-        #                 "data": task_base64_images[i],
-        #             },
-        #         }
-        #     )
-        # content.append({
-        #     "type": "text",
-        #     "text": f"\nAnswer:",
-        # })
-        # # Invoke the model with the prompt and the encoded image
-        # request_body = {
-        #     "anthropic_version": "bedrock-2023-05-31",
-        #     "max_tokens": 2048,
-        #     "system": system_prompt,
-        #     "temperature": 1,
-        #     "messages": [
-        #         {
-        #             "role": "user",
-        #             "content": content
-        #         }
-        #     ],
-        # }
+        request_body = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 2048,
+            "system": prompt.system_prompt,
+            "temperature": 1,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": content
+                }
+            ],
+        }
 
         try:
-            response = client.invoke_model(
-                modelId=self.model_id,
+            response = self._client.invoke_model(
+                modelId=self._model_id,
                 body=json.dumps(request_body),
             )
 

@@ -1,0 +1,8 @@
+{
+  "model_id": "claude-v3.0",
+  "inference_config": {
+    "anthropic_version": "bedrock-2023-05-31",
+    "max_tokens": 2048,
+    "temperature": 1
+  }
+}
