@@ -15,6 +15,7 @@ class PromptTemplate:
     system_prompt: str = ""
     prompt_prefix: str = ""
     prompt_suffix: str = ""
+    regex: str = ".*"
     cot_prompt: Optional[CoTPrompt] = None
 
     @classmethod
