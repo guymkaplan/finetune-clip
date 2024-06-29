@@ -8,11 +8,14 @@ from PIL import Image
 from prompt_template import PromptTemplate
 from enrich_image_model import EnrichImageModel, EnrichImageResult
 import boto3
-from utils import retry_exp_backoff
+from utils.utils import retry_exp_backoff
+from models import register_model
 
 logger = logging.getLogger(__name__)
-CONFIG_PATH = 'enrich_images/bedrock_claude_config.json'
+CONFIG_PATH = 'config/bedrock_claude_config.json'
 
+
+@register_model("BedrockClaudeSonnet")
 class BedrockClaudeSonnet(EnrichImageModel):
     """Encapsulates Claude 3 model invocations using the Amazon Bedrock Runtime client."""
 
@@ -26,7 +29,7 @@ class BedrockClaudeSonnet(EnrichImageModel):
         self._client = client
         self._model_id = model_id
         try:
-            with open(CONFIG_PATH, "r") as f:
+            with open(CONFIG_PATH, "r") as f: #TODO: move config to enrich_images/config
                 self._config = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             print(f"Error loading Bedrock config: {e}")
@@ -53,11 +56,12 @@ class BedrockClaudeSonnet(EnrichImageModel):
         if prompt.cot_prompt is not None:
             content.append(
                 {
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": "image/png",
-                    "data": self._encode_image_from_path(prompt.cot_prompt.image, target_width=128, target_height=128),
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/png",
+                        "data": self._encode_image_from_path(prompt.cot_prompt.image, target_width=128,
+                                                             target_height=128),
                     },
                 }
             )

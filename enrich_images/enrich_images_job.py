@@ -1,4 +1,3 @@
-
 import logging
 import multiprocessing
 import os
@@ -6,8 +5,8 @@ import pandas as pd
 from dataclasses import dataclass, field
 from prompt_template import PromptTemplate
 from models import build_model
-from utils import load_image
-
+from utils.utils import load_image
+from config import constants
 logger = logging.getLogger(__name__)
 
 
@@ -38,7 +37,7 @@ class EnrichImagesJobConfig:
         }
     )
     image_target_size: tuple[int, int] = field(
-        default=(244, 244),
+        default=DEFAULT_IMAGE_SIZE,
         metadata={
             "help": "The pixel size that will be used when querying the model."
                     "Note that larger values require more compute, potentially increasing costs."
@@ -76,11 +75,11 @@ class EnrichImagesJob:
     def _query_model(self, image_path: str):
         image = load_image(image_path)
         try:
-            result = self._model.infer(prompt=self._config.prompt_path, image=image, image_name=image_path)
+            result = self._model.infer(prompt=self._prompt_template, image=image, image_name=image_path)
             return pd.DataFrame({
-                'image_name': [result.image_name],
-                'caption': [result.caption],
-                'llm': [result.llm_response]
+                constants.IMAGE_PATH_COLUMN: [result.image_name],
+                constants.CAPTION_COLUMN: [result.caption],
+                constants.LLM_RESPONSE_COLUMN: [result.llm_response]
             })
         except:
             logger.error(f"failed creating a caption for the image in {image_path}")

@@ -2,9 +2,9 @@
   "system_prompt": "You are a helpful AI assistant. Wrap your final answer around the <caption></caption> tag.",
   "prompt_prefix": "Describe the following image in detail:",
   "prompt_suffix": "Please provide a detailed caption for the image. \nQ:",
-  "regex": "<caption>.*</caption>"
   "cot_prompt": {
     "image_path": "example_data/cot_image_example.jpg",
     "explanation": "A: <caption>\"Park moments: Dad, baby, and their furry friend\"</caption>:\n\n    Conciseness: The user requested a shorter caption, so I aimed to keep it brief while still capturing the essence of the image.\n    Key Elements: The image features a man, a baby, and a dog in a park setting. It's important to mention all three main subjects to give a full picture.\n    Warmth and Connection: \"Park moments\" conveys a sense of shared experience and leisure, highlighting the bond between the individuals and their pet.\n    Simplicity and Clarity: The caption is straightforward and easy to understand, which makes it effective and appealing for a wide audience.\n    Smartness: The caption subtly reflects the scene's emotions and setting without being overly descriptive, maintaining a balance between being informative and evocative."
-  }
+  },
+  "regex": "<caption>.*</caption>"
 }

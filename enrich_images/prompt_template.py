@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from PIL import Image
 from typing import Optional
-from utils import load_image
+from utils.utils import load_image
 @dataclass
 class CoTPrompt:
     image: Optional[Image.Image]

@@ -28,7 +28,7 @@ def retry_exp_backoff(attempts=3, initial_delay=1, backoff_factor=2):
     return deco
 
 @retry_exp_backoff()
-def load_image(image_source: str, target_size=(256,256)) -> Image.Image:
+def load_image(image_source: str, target_size) -> Image.Image:
     """
     Load an image from a URL or local file path.
 
