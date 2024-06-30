@@ -11,7 +11,7 @@ import pandas as pd
 from dataclasses import dataclass, field
 from typing import Optional
 
-import torch
+from torchvision import transforms
 from datasets import Dataset, Image
 
 import transformers
@@ -24,6 +24,7 @@ from transformers.utils import check_min_version, send_example_telemetry
 from input_processing.process_text import tokenize_captions
 from input_processing.collate import collate_fn
 from finetune_clip.model_loader import ModelLoader
+from utils.utils import load_image
 
 logger = logging.getLogger(__name__)
 
@@ -143,9 +144,16 @@ class FineTuneCLIPJob:
             },
             desc="Tokenizing captions"
         )
+
+        def transform_images_batched(examples):
+            images = [load_image(path) for path in examples[self._job_config.image_path_column]]
+            images = [transforms.PILToTensor()(image) for image in images]
+            examples[self._job_config.image_path_column] = [image_transformations(image) for image in images]
+            return examples
+
         logging.info("Caption tokenization complete")
         dataset = dataset.cast_column(self._job_config.image_path_column, Image())
-        dataset.set_transform(image_transformations, columns=[self._job_config.image_path_column], output_all_columns=True)
+        dataset.set_transform(transform_images_batched, columns=[self._job_config.image_path_column], output_all_columns=True)
         dataset = dataset.shuffle(seed=self._job_config.random_seed)
         splitted_dataset = dataset.train_test_split(train_size=0.8, seed=self._job_config.random_seed)
         output_dir = os.environ['SM_OUTPUT_DATA_DIR']
@@ -170,5 +178,5 @@ class FineTuneCLIPJob:
         tokenizer.save_pretrained(self._job_config.output_path)
         image_processor.save_pretrained(self._job_config.output_path)
         writer.close()
-        logging.info(f"Training complete; Model saved to {self._job_config.output_path}")
+        logging.info(f"Training complete; Model, tokenizer and image processor saved to {self._job_config.output_path}")
 
