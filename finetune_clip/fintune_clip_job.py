@@ -21,6 +21,7 @@ from transformers import (
 )
 from transformers.utils import check_min_version, send_example_telemetry
 
+from config.constants import CONSTANTS
 from input_processing.process_text import tokenize_captions
 from input_processing.collate import collate_fn
 from finetune_clip.model_loader import ModelLoader
@@ -56,7 +57,7 @@ class ModelArguments:
         default=None, metadata={"help": "Name or path of preprocessor config."}
     )
     text_max_length: int = field(
-        default=128, metadata={
+        default=CONSTANTS.TEXT_MAX_LENGTH, metadata={
             "help": "max number of tokens for each captions. if caption holds less than this number, it will be padded."
                     "If the caption holds more tokens than this number, it will be truncated"}
     )
@@ -85,12 +86,12 @@ class FineTuneClIPJobConfig:
         }
     )
     image_path_column: str = field(
-        default=constants.IMAGE_PATH_COLUMN, metadata={
+        default=CONSTANTS.IMAGE_PATH_COLUMN, metadata={
             "help": "Name of the column containing image paths/URLs in the input dataframe"
         }
     )
     caption_column: str = field(
-        default=constants.CAPTION_COLUMN, metadata={
+        default=CONSTANTS.CAPTION_COLUMN, metadata={
             "help": "Name of the column containing image URLs in the input dataframe, if a dataframe is provided instead of image files"
         }
     )
@@ -100,7 +101,7 @@ class FineTuneClIPJobConfig:
             "help": "Path to save the model to. Should be a local path inside the SageMaker container"}
     )
     random_seed: int = field(
-        default=42, metadata={
+        default=CONSTANTS.RANDOM_SEED, metadata={
             "help": "Random seed for reproducibility"}
     )
     training_args_path: str = field(

@@ -1,8 +1,8 @@
-from config import constants
+from config.constants import CONSTANTS
 
 
 def tokenize_captions(examples, tokenizer, text_max_length):
-    captions = [caption for caption in examples[constants.IMAGE_PATH_COLUMN]]
+    captions = [caption for caption in examples[CONSTANTS.IMAGE_PATH_COLUMN]]
     tokens = tokenizer(captions,
                        max_length=text_max_length,
                        padding="max_length",

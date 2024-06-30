@@ -8,8 +8,8 @@ from PIL import Image
 from prompt_template import PromptTemplate
 from enrich_image_model import EnrichImageModel, EnrichImageResult
 import boto3
-from utils.utils import retry_exp_backoff
 from models import register_model
+from tenacity import retry, wait_fixed, stop_after_attempt
 
 logger = logging.getLogger(__name__)
 CONFIG_PATH = 'config/bedrock_claude_config.json'
@@ -92,7 +92,10 @@ class BedrockClaudeSonnet(EnrichImageModel):
 
         return self._generate_caption(image_name, request_body)
 
-    @retry_exp_backoff(attempts=5, initial_delay=2, backoff_factor=2)
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(1),
+    )
     def _generate_caption(self, image_name, request_body):
         """
         Generates a caption for the given image using the Bedrock Claude 3 Sonnet model.

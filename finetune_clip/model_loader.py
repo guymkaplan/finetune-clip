@@ -29,13 +29,3 @@ class ModelLoader:
         image_transformations = torch.jit.script(image_transformations)
         return model, tokenizer, image_processor, image_transformations
 
-
-if __name__ == '__main__':
-    a = ModelLoader.load_model(
-        vision_encoder_name_or_path="openai/clip-vit-base-patch32",
-        text_encoder_name_or_path="google-bert/bert-base-multilingual-cased",
-        tokenizer_name_or_path="google-bert/bert-base-multilingual-cased",
-        image_processor_name_or_path="openai/clip-vit-base-patch32",
-        data_parallel=True
-    )
-    print(a)

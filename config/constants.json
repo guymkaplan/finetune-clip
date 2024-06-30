@@ -1,0 +1,8 @@
+{
+  "LLM_RESPONSE_COLUMN": "llm",
+  "CAPTION_COLUMN": "caption",
+  "IMAGE_PATH_COLUMN": "image_path",
+  "DEFAULT_IMAGE_SIZE": [244, 244],
+  "RANDOM_SEED": 42,
+  "TEXT_MAX_LENGTH": 128
+}
