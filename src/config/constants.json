@@ -1,0 +1,13 @@
+{
+  "LLM_RESPONSE_COLUMN": "llm",
+  "CAPTION_COLUMN": "caption",
+  "IMAGE_PATH_COLUMN": "image_path",
+  "DEFAULT_IMAGE_SIZE": "(244, 244)",
+  "RANDOM_SEED": 42,
+  "TEXT_MAX_LENGTH": 128,
+  "DEFAULT_DOCKER_IMAGE": "763104351884.dkr.ecr.us-east-1.amazonaws.com/huggingface-pytorch-training:2.0.0-transformers4.28.1-gpu-py310-cu118-ubuntu20.04",
+  "ENRICH_IMAGES_DEFAULT_INSTANCE_TYPE": "ml.r5.16xlarge",
+  "DEFAULT_DESTINATION_BASE_PATH": "/opt/ml/processing/input",
+  "USER_CODE_PATH": "/opt/ml/processing/input/code/src/usr_code",
+  "DEFAULT_USER_DIR_PATH": "deployment/usr_code"
+}

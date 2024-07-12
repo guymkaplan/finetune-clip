@@ -120,3 +120,26 @@ class DeployModelJob():
                 initial_instance_count=self._config.initial_instance_count
             )
             logging.info(f"Deployed model: {self._config.model_name}")
+
+if __name__ == '__main__':
+    model_name = os.environ.get("MODEL_NAME")
+    model_uri = os.environ.get("MODEL_URI")
+    main_module_name = os.environ.get("MAIN_MODULE_NAME")
+    endpoint_name = os.environ.get("ENDPOINT_NAME")
+    instance_type = os.environ.get("INSTANCE_TYPE", "ml.g5.8xlarge")
+    initial_instance_count = int(os.environ.get("INITIAL_INSTANCE_COUNT", 1))
+    deploy_model_as_endpoint = bool(os.environ.get("DEPLOY_MODEL_AS_ENDPOINT", False))
+    usr_code_dir = os.environ.get("USR_CODE_DIR")
+    config = DeployModelJobConfig(
+        model_name=model_name,
+        model_uri=model_uri,
+        main_module_name=main_module_name,
+        endpoint_name=endpoint_name,
+        instance_type=instance_type,
+        initial_instance_count=initial_instance_count,
+        deploy_model_as_endpoint=deploy_model_as_endpoint,
+        usr_code_dir=usr_code_dir
+    )
+    logging.info(f"Starting job with config: {config}")
+    DeployModelJob(config=config).run()
+    logging.info("Job completed successfully!")

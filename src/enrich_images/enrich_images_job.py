@@ -3,10 +3,12 @@ import multiprocessing
 import os
 import pandas as pd
 from dataclasses import dataclass, field
+
+from src.config.constants import CONSTANTS
+
 from prompt_template import PromptTemplate
 from models import build_model
-from utils.utils import load_image
-from config import constants
+from ..utils.utils import load_image
 logger = logging.getLogger(__name__)
 
 
@@ -37,7 +39,7 @@ class EnrichImagesJobConfig:
         }
     )
     image_target_size: tuple[int, int] = field(
-        default=DEFAULT_IMAGE_SIZE,
+        default=CONSTANTS.DEFAULT_IMAGE_SIZE,
         metadata={
             "help": "The pixel size that will be used when querying the model."
                     "Note that larger values require more compute, potentially increasing costs."
@@ -62,7 +64,7 @@ class EnrichImagesJob:
 
     def _load_image_paths(self):
         """Load image paths from a directory or a dataframe."""
-        if os.path.isdir(self._config.data_path) and not os.listdir(self._config.data_path)[0].startswith("s3://"):
+        if os.path.isdir(self._config.data_path) and not self._config.data_path.startswith("s3://"):
             images = set()
             for filename in os.listdir(self._config.data_path):
                 if filename.endswith(".jpg") or filename.endswith(".png") or filename.endswith(".jpeg"):
@@ -77,10 +79,28 @@ class EnrichImagesJob:
         try:
             result = self._model.infer(prompt=self._prompt_template, image=image, image_name=image_path)
             return pd.DataFrame({
-                constants.IMAGE_PATH_COLUMN: [result.image_name],
-                constants.CAPTION_COLUMN: [result.caption],
-                constants.LLM_RESPONSE_COLUMN: [result.llm_response]
+                CONSTANTS.IMAGE_PATH_COLUMN: [result.image_name],
+                CONSTANTS.CAPTION_COLUMN: [result.caption],
+                CONSTANTS.LLM_RESPONSE_COLUMN: [result.llm_response]
             })
         except:
             logger.error(f"failed creating a caption for the image in {image_path}")
             return
+
+
+if __name__ == '__main__':
+    data_path = os.environ.get("DATA_PATH")
+    image_url_column = os.environ.get("IMAGE_URL_COLUMN", "url")  # Default to "url" if not set
+    prompt_path = os.environ.get("PROMPT_PATH", )
+    output_path = os.environ.get("OUTPUT_PATH")
+    image_target_size = tuple(int(x) for x in os.environ.get("IMAGE_TARGET_SIZE").strip("()").split(","))
+    config = EnrichImagesJobConfig(
+        data_path=data_path,
+        image_url_column=image_url_column,
+        prompt_path=prompt_path,
+        output_path=output_path,
+        image_target_size=image_target_size,
+    )
+    logger.info(f"Starting job with config: {config}")
+    EnrichImagesJob(config=config).run()
+    logger.info("Job completed successfully!")
