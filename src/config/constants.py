@@ -17,6 +17,7 @@ class Constants:
     DEFAULT_DESTINATION_BASE_PATH: str = field(init=False)
     USER_CODE_PATH: str = field(init=False)
     DEFAULT_USER_DIR_PATH: str = field(init=False)
+    DEFAULT_TRAINING_ARGS_PATH: str = field(init=False)
 
     def __post_init__(self):
         if self.config_path is None:
@@ -57,6 +58,11 @@ class Constants:
         self.DEFAULT_DESTINATION_BASE_PATH = config.get('DEFAULT_DESTINATION_BASE_PATH')
         self.USER_CODE_PATH = config.get('USER_CODE_PATH')
         self.DEFAULT_USER_DIR_PATH = config.get('DEFAULT_USER_DIR_PATH')
+        self.DEFAULT_TRAINING_ARGS_PATH = config.get('DEFAULT_TRAINING_ARGS_PATH')
+        self.DEFAULT_TRAINING_INSTANCE_TYPE = config.get('DEFAULT_TRAINING_INSTANCE_TYPE')
+        self.DEFAULT_IMAGES_PATH_CONTAINER = config.get('DEFAULT_IMAGES_PATH_CONTAINER')
+        self.DEFAULT_PRETRAINED_VISION_MODEL_PATH = config.get('DEFAULT_PRETRAINED_VISION_MODEL_PATH')
+        self.DEFAULT_PRETRAINED_TEXT_MODEL_PATH = config.get('DEFAULT_PRETRAINED_TEXT_MODEL_PATH')
 
 
 

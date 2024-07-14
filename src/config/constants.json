@@ -9,5 +9,11 @@
   "ENRICH_IMAGES_DEFAULT_INSTANCE_TYPE": "ml.r5.16xlarge",
   "DEFAULT_DESTINATION_BASE_PATH": "/opt/ml/processing/input",
   "USER_CODE_PATH": "/opt/ml/processing/input/code/src/usr_code",
-  "DEFAULT_USER_DIR_PATH": "deployment/usr_code"
+  "DEFAULT_USER_DIR_PATH": "deployment/usr_code",
+  "DEFAULT_TRAINING_ARGS_PATH": "config/training_args.json",
+  "DEFAULT_TRAINING_INSTANCE_TYPE": "ml.p3.2xlarge",
+  "DEFAULT_IMAGES_PATH_CONTAINER": "/opt/ml/images",
+  "DEFAULT_PRETRAINED_VISION_MODEL_PATH": "opt/ml/vision_model",
+  "DEFAULT_PRETRAINED_TEXT_MODEL_PATH": "opt/ml/text_model"
+
 }

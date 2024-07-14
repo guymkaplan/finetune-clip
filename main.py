@@ -1,11 +1,14 @@
 import argparse
+import sys
 import os
 from typing import Tuple
 import boto3
-from sagemaker.processing import ProcessingInput, ProcessingOutput, ScriptProcessor
+from sagemaker.processing import ProcessingInput, ScriptProcessor
+from sagemaker.inputs import TrainingInput
 import sagemaker
-
+from sagemaker.estimator import Estimator
 from src.config.constants import CONSTANTS
+import logging
 
 DESTINATION_DATA_PATH = os.path.join(CONSTANTS.DEFAULT_DESTINATION_BASE_PATH, "data")
 DESTINATION_PROMPT_PATH = os.path.join(CONSTANTS.DEFAULT_DESTINATION_BASE_PATH, "prompt")
@@ -14,6 +17,7 @@ OWN_DIRECTORY_PATH = os.path.dirname(os.path.abspath(__file__))
 SRC_PATH = os.path.join(OWN_DIRECTORY_PATH, "src")
 LLM_SOFT_LABELS_SCRIPT_PATH = os.path.join(SRC_PATH, "enrich_images", "enrich_images.py")
 DEPLOY_MODEL_SCRIPT_PATH = os.path.join(SRC_PATH, "deployment", "deploy_model_job.py")
+FINETUNE_CLIP_SCRIPT_PATH = os.path.join(SRC_PATH, "finetune_clip", "finetune_clip.py")
 
 
 def parse_args():
@@ -53,8 +57,39 @@ def parse_args():
                                default=os.path.join(SRC_PATH, CONSTANTS.DEFAULT_USER_DIR_PATH),
                                help="Directory containing the user code for the model")
 
-    return parser.parse_args()
+    # Fine-tune CLIP command
+    # Model arguments:
+    finetune_parser = subparsers.add_parser("fine-tune", help="Fine-tune CLIP model")
 
+    finetune_parser.add_argument("--text_model_name_or_path", type=str, required=True,
+                                 help="Path to pretrained text model in s3 or model identifier from huggingface.co/models")
+    finetune_parser.add_argument("--vision_model_name_or_path", type=str, required=True,
+                                 help="Path to pretrained vision model in s3 or model identifier from huggingface.co/models")
+    finetune_parser.add_argument("--tokenizer_name_or_path", type=str, default=None,
+                                 help="Pretrained tokenizer name or path if not the same as model_name")
+    finetune_parser.add_argument("--image_processor_name", type=str, default=None,
+                                 help="Name or path of preprocessor config.")
+    finetune_parser.add_argument("--text_max_length", type=int, default=CONSTANTS.TEXT_MAX_LENGTH,
+                                 help="Max number of tokens for each caption. If caption holds less than this number, it will be padded. If the caption holds more tokens than this number, it will be truncated")
+    finetune_parser.add_argument("--data_parallel", type=bool, default=True,
+                                 help="If to apply parallelization of the model on multiple GPUs")
+    finetune_parser.add_argument("--lit", type=bool, default=True,
+                                 help="If to apply LiT while training. Defaults to True. Freezes image encoder weights")
+
+    # Fine-tune job config:
+    finetune_parser.add_argument("--dataset_path", type=str, required=True,
+                                 help="Path to directory/S3 URI containing a DataFrame with image paths and captions")
+    finetune_parser.add_argument("--images_path", type=str,
+                                 help="Path to S3 where images are stored. If using this input, \"image_path\" column in dataset should be f\"opt/ml/input/data/images/{image_name}.{image_extension}\"")
+    finetune_parser.add_argument("--image_path_column", type=str, default=CONSTANTS.IMAGE_PATH_COLUMN,
+                                 help="Name of the column containing image paths/URLs in the input dataframe")
+    finetune_parser.add_argument("--caption_column", type=str, default=CONSTANTS.CAPTION_COLUMN,
+                                 help="Name of the column containing captions in the input dataframe")
+    finetune_parser.add_argument("--output_path", type=str, required=True,
+                                 help="S3 path to save the fine-tuned model")
+    finetune_parser.add_argument("--random_seed", type=int, default=CONSTANTS.RANDOM_SEED,
+                                 help="Random seed for reproducibility")
+    return parser.parse_args()
 
 def create_enrich_images_env(args):
     env = {
@@ -92,7 +127,7 @@ def run_enrich_images_job(args):
         )
     ]
     if not args.data_path.startswith("s3://"):
-        # when data is contained in s3, we load it during job runtime instead of transfering
+        # when data is contained in s3, we load it during job runtime instead of transferring
         # the files into the container. this is generally faster.
         inputs.append(
             ProcessingInput(
@@ -101,13 +136,61 @@ def run_enrich_images_job(args):
                 input_name="data",
             ),
         )
-    # Run the Processing job
     processor.run(
-        code=LLM_SOFT_LABELS_SCRIPT_PATH,  # path to the .py file to run
+        code=LLM_SOFT_LABELS_SCRIPT_PATH,
         inputs=inputs,
     )
 
+def run_finetune_clip_job(args):
+    sagemaker_session = sagemaker.Session(boto3.Session())
+    role = sagemaker.get_execution_role()
 
+    estimator = Estimator(
+        image_uri=CONSTANTS.DEFAULT_CONTAINER_IMAGE,
+        dependencies=[SRC_PATH],
+        role=role,
+        instance_count=args.instance_count,
+        instance_type=args.instance_type,
+        entry_point=FINETUNE_CLIP_SCRIPT_PATH,
+        output_path=args.output_path,
+    )
+    inputs = dict()
+    hyper_params = dict(
+        text_model_name_or_path=args.text_model_name_or_path,
+        vision_model_name_or_path=args.vision_model_name_or_path,
+        tokenizer_name_or_path=args.tokenizer_name_or_path,
+        image_processor_name=args.image_processor_name,
+        text_max_length=args.text_max_length,
+        data_parallel=args.data_parallel,
+        lit=args.lit,
+        # FineTuneClIPJobConfig
+        dataset_path=args.dataset_path,
+        images_path=args.images_path,
+        image_path_column=args.image_path_column,
+        caption_column=args.caption_column,
+        random_seed=args.random_seed,
+    )
+    if args.images_path:  # case where the images are stored in s3
+        inputs["images"] = TrainingInput(args.images_path, distribution="FullyReplicated")
+    if args.vision_model_name_or_path.startswith("s3://"):
+        # insert the pretrained model as training input:
+        inputs["vision_model"] = TrainingInput(
+            args.vision_model_name_or_path, distribution="FullyReplicated"
+        )
+        # point to where the pretrained model will be stored in the training container
+        hyper_params["vision_model_name_or_path"] = CONSTANTS.DEFAULT_PRETRAINED_VISION_MODEL_PATH
+    if args.text_model_name_or_path.startswith("s3://"):
+        # insert the pretrained model as training input:
+        inputs["text_model"] = TrainingInput(
+            args.text_model_name_or_path, distribution="FullyReplicated"
+        )
+        # point to where the pretrained model will be stored in the training container
+        hyper_params["text_model_name_or_path"] = CONSTANTS.DEFAULT_PRETRAINED_TEXT_MODEL_PATH
+    estimator.set_hyperparameters(**hyper_params)
+    estimator.fit(
+        inputs=inputs,
+        job_name=f"finetune-clip-{sagemaker_session.default_bucket()}",
+    )
 def create_deploy_model_env(args):
     return {
         "MODEL_NAME": args.model_name,
@@ -155,12 +238,21 @@ def run_deploy_model_job(args):
 
 def main():
     args = parse_args()
+    logging.info(f"Received arguments: {args}")
     if args.command == "enrich":
         run_enrich_images_job(args)
     elif args.command == "deploy":
         run_deploy_model_job(args)
+    elif args.command == "fine-tune":
+        run_finetune_clip_job(args)
     else:
-        print("Invalid command. Use 'enrich' or 'deploy'.")
+        logging.info("Invalid command. Use 'enrich', 'deploy' or 'fine-tune'.")
 
 if __name__ == "__main__":
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    # Create a StreamHandler that writes to stdout
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))
+    root_logger.addHandler(stdout_handler)
     main()

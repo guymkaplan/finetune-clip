@@ -1,8 +1,8 @@
 import os
 from dataclasses import dataclass, field
 
+import torch
 from torch.utils.tensorboard import SummaryWriter
-
 from config import constants
 import logging
 import os
@@ -47,9 +47,6 @@ class ModelArguments:
     vision_model_name_or_path: str = field(
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"},
     )
-    config_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
-    )
     tokenizer_name_or_path: Optional[str] = field(
         default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
     )
@@ -80,13 +77,8 @@ class FineTuneClIPJobConfig:
             "help": "Path to directory/S3 URI containing a DataFrame with image paths and captions"
         }
     )
-    images_path: str = field(
-        default=None, metadata={
-            "help": "Path to directory containing images, if the image paths in the dataset are local paths and not URLs"
-        }
-    )
     image_path_column: str = field(
-        default=CONSTANTS.IMAGE_PATH_COLUMN, metadata={
+        default=None, metadata={
             "help": "Name of the column containing image paths/URLs in the input dataframe"
         }
     )
@@ -95,27 +87,18 @@ class FineTuneClIPJobConfig:
             "help": "Name of the column containing image URLs in the input dataframe, if a dataframe is provided instead of image files"
         }
     )
-    output_path: str = field(
-        default=None,
-        metadata={
-            "help": "Path to save the model to. Should be a local path inside the SageMaker container"}
-    )
     random_seed: int = field(
         default=CONSTANTS.RANDOM_SEED, metadata={
             "help": "Random seed for reproducibility"}
-    )
-    training_args_path: str = field(
-        default='config/training_args.json', metadata={
-            "help": "Path to the training arguments json file. If not provided, defaults to \'config/training_args.json\'."}
     )
 
 
 
 class FineTuneCLIPJob:
-    def __init__(self, job_config: FineTuneClIPJobConfig, model_args=ModelArguments):
+    def __init__(self, job_config: FineTuneClIPJobConfig, model_args: ModelArguments):
         self._job_config = job_config
         self._model_args = model_args
-        with open(self._job_config.training_args_path, "r") as f:
+        with open(CONSTANTS.DEFAULT_TRAINING_ARGS_PATH, "r") as f:
             training_args_dict = json.load(f)
         self._training_args = TrainingArguments(
             **training_args_dict
@@ -175,9 +158,14 @@ class FineTuneCLIPJob:
             callbacks=[early_stop_callback, tensorboard_callback]
         )
         trainer.train()
-        trainer.save_model(self._job_config.output_path)
-        tokenizer.save_pretrained(self._job_config.output_path)
-        image_processor.save_pretrained(self._job_config.output_path)
+        trainer.save_model(output_dir)
+        tokenizer.save_pretrained(output_dir)
+        image_processor.save_pretrained(output_dir)
         writer.close()
-        logging.info(f"Training complete; Model, tokenizer and image processor saved to {self._job_config.output_path}")
+        logging.info(f"Training complete; Model, tokenizer and image processor saved to {output_dir}")
+
+
+if __name__ == '__main__':
+    hyperparameters = json.loads(os.environ['SM_HPS'])
+
 

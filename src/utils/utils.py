@@ -32,7 +32,7 @@ def load_image(image_source: str, target_size=224) -> Image.Image:
             image = Image.open(image_source)
         if image.mode != "RGB":
             image = image.convert("RGB")
-        image = image.resize(target_size, resample=Image.Resampling.LANCZOS)
+        image = image.resize((target_size,target_size), resample=Image.Resampling.LANCZOS)
         return image
     except Exception as e:
         logging.info(f"Error loading image from {image_source}: {e}")

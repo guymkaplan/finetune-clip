@@ -4,7 +4,7 @@ import os
 import pandas as pd
 from dataclasses import dataclass, field
 
-from src.config.constants import CONSTANTS
+from config.constants import CONSTANTS
 
 from prompt_template import PromptTemplate
 from models import build_model
