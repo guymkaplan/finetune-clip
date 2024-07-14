@@ -56,19 +56,17 @@ def parse_args():
     deploy_parser.add_argument("--usr_code_dir", type=str,
                                default=os.path.join(SRC_PATH, CONSTANTS.DEFAULT_USER_DIR_PATH),
                                help="Directory containing the user code for the model")
+    deploy_parser.add_argument("--docker_image", type=str, default=CONSTANTS.DEFAULT_CONTAINER_IMAGE,
+                               help="Docker image to use for processing")
 
     # Fine-tune CLIP command
     # Model arguments:
     finetune_parser = subparsers.add_parser("fine-tune", help="Fine-tune CLIP model")
 
     finetune_parser.add_argument("--text_model_name_or_path", type=str, required=True,
-                                 help="Path to pretrained text model in s3 or model identifier from huggingface.co/models")
+                                 help="Path to pretrained text model in s3 or model identifier from huggingface.co/models. Make sure your model contains tokenizer_config.json")
     finetune_parser.add_argument("--vision_model_name_or_path", type=str, required=True,
-                                 help="Path to pretrained vision model in s3 or model identifier from huggingface.co/models")
-    finetune_parser.add_argument("--tokenizer_name_or_path", type=str, default=None,
-                                 help="Pretrained tokenizer name or path if not the same as model_name")
-    finetune_parser.add_argument("--image_processor_name", type=str, default=None,
-                                 help="Name or path of preprocessor config.")
+                                 help="Path to pretrained vision model in s3 or model identifier from huggingface.co/models. Make sure your model contains preprocessor.json")
     finetune_parser.add_argument("--text_max_length", type=int, default=CONSTANTS.TEXT_MAX_LENGTH,
                                  help="Max number of tokens for each caption. If caption holds less than this number, it will be padded. If the caption holds more tokens than this number, it will be truncated")
     finetune_parser.add_argument("--data_parallel", type=bool, default=True,

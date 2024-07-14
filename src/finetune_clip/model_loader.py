@@ -9,8 +9,6 @@ class ModelLoader:
     def load_model(cls,
                    vision_encoder_name_or_path: str,
                    text_encoder_name_or_path: str,
-                   tokenizer_name_or_path: str,
-                   image_processor_name_or_path: str,
                    data_parallel: bool):
         model = VisionTextDualEncoderModel.from_vision_text_pretrained(
             vision_model_name_or_path=vision_encoder_name_or_path,
@@ -21,8 +19,8 @@ class ModelLoader:
             model.to("cuda")
             if data_parallel:
                 model = torch.nn.DataParallel(model)
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path)
-        image_processor = AutoImageProcessor.from_pretrained(image_processor_name_or_path)
+        tokenizer = AutoTokenizer.from_pretrained(text_encoder_name_or_path)
+        image_processor = AutoImageProcessor.from_pretrained(vision_encoder_name_or_path)
         image_transformations = ImageTransformation(
             image_size, image_processor.image_mean, image_processor.image_std
         )

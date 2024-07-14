@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.42.0.dev0")
 
+
 # require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/contrastive-image-text/requirements.txt")
 
 
@@ -93,7 +94,6 @@ class FineTuneClIPJobConfig:
     )
 
 
-
 class FineTuneCLIPJob:
     def __init__(self, job_config: FineTuneClIPJobConfig, model_args: ModelArguments):
         self._job_config = job_config
@@ -109,8 +109,6 @@ class FineTuneCLIPJob:
         model, tokenizer, image_processor, image_transformations = ModelLoader.load_model(
             vision_encoder_name_or_path=self._model_args.vision_model_name_or_path,
             text_encoder_name_or_path=self._model_args.text_model_name_or_path,
-            image_processor_name_or_path=self._model_args.image_processor_name,
-            tokenizer_name_or_path=self._model_args.tokenizer_name_or_path,
             data_parallel=self._model_args.data_parallel,
         )
         logging.info("Loading dataframe...")
@@ -137,7 +135,8 @@ class FineTuneCLIPJob:
 
         logging.info("Caption tokenization complete")
         dataset = dataset.cast_column(self._job_config.image_path_column, Image())
-        dataset.set_transform(transform_images_batched, columns=[self._job_config.image_path_column], output_all_columns=True)
+        dataset.set_transform(transform_images_batched, columns=[self._job_config.image_path_column],
+                              output_all_columns=True)
         dataset = dataset.shuffle(seed=self._job_config.random_seed)
         splitted_dataset = dataset.train_test_split(train_size=0.8, seed=self._job_config.random_seed)
         output_dir = os.environ['SM_OUTPUT_DATA_DIR']
@@ -167,5 +166,18 @@ class FineTuneCLIPJob:
 
 if __name__ == '__main__':
     hyperparameters = json.loads(os.environ['SM_HPS'])
-
-
+    model_args = ModelArguments(
+        text_model_name_or_path=hyperparameters["text_model_name_or_path"],
+        vision_model_name_or_path=hyperparameters["vision_model_name_or_path"],
+        text_max_length=hyperparameters["text_max_length"],
+        data_parallel=hyperparameters["data_parallel"],
+        lit=hyperparameters["lit"]
+    )
+    job_config = FineTuneClIPJobConfig(
+        dataset_path=hyperparameters["dataset_path"],
+        image_path_column=hyperparameters["image_path_column"],
+        caption_column=hyperparameters["caption_column"],
+        random_seed=hyperparameters["random_seed"]
+    )
+    logger.info(f"starting training with model args: {model_args}; and with job config: {job_config}")
+    FineTuneCLIPJob(job_config, model_args).run()
