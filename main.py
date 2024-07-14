@@ -239,10 +239,10 @@ def main():
     logging.info(f"Received arguments: {args}")
     if args.command == "enrich":
         run_enrich_images_job(args)
-    elif args.command == "deploy":
-        run_deploy_model_job(args)
     elif args.command == "fine-tune":
         run_finetune_clip_job(args)
+    elif args.command == "deploy":
+        run_deploy_model_job(args)
     else:
         logging.info("Invalid command. Use 'enrich', 'deploy' or 'fine-tune'.")
 
