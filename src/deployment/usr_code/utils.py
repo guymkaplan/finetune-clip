@@ -1,4 +1,3 @@
-import asyncio
 import io
 import logging
 import time
@@ -9,10 +8,10 @@ from PIL import Image
 
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-import aiohttp
 import torch
-from aiolimiter import AsyncLimiter
 from torchvision.transforms import Resize, InterpolationMode, CenterCrop, ConvertImageDtype, Normalize
+
+from config.constants import CONSTANTS
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,6 @@ async def download_image(session, url, rate_limiter):
         start_time = time.process_time()
 
         async with rate_limiter, session.get(url) as response:
-
             elapsed_time = time.process_time() - start_time
             logger.debug("... image from URL in [{}] seconds".format(elapsed_time))
 
@@ -36,28 +34,12 @@ async def download_image(session, url, rate_limiter):
             if response_status_code == 200 and response_content_type.startswith("image"):
                 image_bytes = io.BytesIO(await response.read())
                 image_bytes_nbytes = image_bytes.getbuffer().nbytes
-                if image_bytes_nbytes <= env.image_max_size:
+                if image_bytes_nbytes <= CONSTANTS.DEFAULT_IMAGE_MAX_BYTES:
                     try:
                         with Image.open(image_bytes) as image:
-                            if validate_image_shape(image):
-                                return image_bytes
-                            else:
-                                logger.warning(
-                                    "Invalid image shape: [{}, {}]. Minimum supported is: [{}, {}]".format(
-                                        image.width,
-                                        image.height,
-                                        env.image_min_width,
-                                        env.image_min_height,
-                                    )
-                                )
-                    except:
-                        pass
-                else:
-                    logger.warning(
-                        "Skipping image because the size is too large: [{}] bytes. Maximum allowed is [{}]. URL=[{}]".format(
-                            image_bytes_nbytes, env.image_max_size, url
-                        )
-                    )
+                            return image_bytes
+                    except Exception as e:
+                        logger.error(f"Failed to open image: {e}")
             else:
                 logger.warning(
                     "URL=[{}] returned status code=[{}] and Content-Type=[{}]".format(
@@ -68,9 +50,6 @@ async def download_image(session, url, rate_limiter):
     logger.warning("Invalid URL or image: [{}]".format(url))
     return io.BytesIO()
 
-
-def validate_image_shape(image):
-    return image.width > env.image_min_width and image.height > env.image_min_height
 
 class Transform(torch.nn.Module):
     def __init__(self, image_size, mean, std):

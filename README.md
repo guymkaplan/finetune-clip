@@ -118,7 +118,7 @@ Optional arguments:
 To deploy the fine-tuned model:
 
 ```
-python main.py deploy --model_name <model_name> --model_uri <s3_model_uri> --endpoint_name <endpoint_name>
+python main.py deploy --model_type <model_type: vision | text> --model_name <model_name> --model_uri <s3_model_uri> --endpoint_name <endpoint_name>
 ```
 
 Optional arguments:
@@ -139,3 +139,4 @@ Contributions to this project are welcome. Please fork the repository and submit
 - Optimize hyperparameters for CLIP fine-tuning
 - Add support for multiple image enrichment models
 - Add support for distributed training across multiple instances
+- Support for batch transform jobs on an existing model

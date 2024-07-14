@@ -91,7 +91,7 @@ class EnrichImagesJob:
 if __name__ == '__main__':
     data_path = os.environ.get("DATA_PATH")
     image_url_column = os.environ.get("IMAGE_URL_COLUMN", "url")  # Default to "url" if not set
-    prompt_path = os.environ.get("PROMPT_PATH", )
+    prompt_path = os.path.join(CONSTANTS.DEFAULT_DESTINATION_BASE_PATH, "prompt")
     output_path = os.environ.get("OUTPUT_PATH")
     image_target_size = tuple(int(x) for x in os.environ.get("IMAGE_TARGET_SIZE").strip("()").split(","))
     config = EnrichImagesJobConfig(

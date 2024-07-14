@@ -11,7 +11,9 @@ import logging
 import os
 import pandas as pd
 
-from utils import InferenceArguments, ModelArguments, Transform, filter_dataset, download_images
+from config.constants import CONSTANTS
+from utils import Transform
+from utils.utils import load_image
 
 logger = logging.getLogger(__name__)
 IMAGE_BYTES_COL_NAME = "_image_bytes_"
@@ -52,25 +54,19 @@ def input_fn(request_body, request_content_type):
     if request_bytes.getbuffer().nbytes > 0:
         dataset = pd.read_parquet(request_bytes)
         dataset.columns = dataset.columns.str.lower()
-
         if dataset.empty is False:
-            dataset = filter_dataset(dataset, env)
-
-            logger.info("Starting assets download...")
-
             start_time = time.process_time()
+            logger.info("Starting assets download...")
             loop = asyncio.get_event_loop()
             dataset[IMAGE_BYTES_COL_NAME] = loop.run_until_complete(
-                download_images(dataset[env.input_url_column_name])
+                load_image(dataset[CONSTANTS.IMAGE_PATH_COLUMN])
             )
             elapsed_time = time.process_time() - start_time
-
             logger.info("Downloaded assets in [{}] seconds".format(elapsed_time))
     else:
-        logger.warning("Empty body passed to input_fn, empty DataFrame will be returned")
+        logger.warning("Empty body passed, will return empty DataFrame")
     elapsed_time = time.process_time() - start_time
-
-    logger.info("Parsed input in [{}] seconds".format(elapsed_time))
+    logger.info("took [{}] seconds".format(elapsed_time))
     return dataset
 def predict_fn(data, model_and_image_transformations):
     if data.empty == True:

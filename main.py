@@ -41,6 +41,7 @@ def parse_args():
                                help="Docker image to use for processing")
     # Deploy model command
     deploy_parser = subparsers.add_parser("deploy", help="Deploy model")
+    deploy_parser.add_argument("--model_type", type=str, required=True, help="Type of tower to deploy - vision or text")
     deploy_parser.add_argument("--model_name", type=str, required=True, help="Name of the model to be deployed")
     deploy_parser.add_argument("--model_uri", type=str, required=True, help="S3 URI of the trained model artifact")
     deploy_parser.add_argument("--main_module_name", type=str, help="Name of the main module for the model")
@@ -190,7 +191,13 @@ def run_finetune_clip_job(args):
         job_name=f"finetune-clip-{sagemaker_session.default_bucket()}",
     )
 def create_deploy_model_env(args):
+    entry_point = ""
+    if args.model_type == "vision":
+        entry_point = "image_module.py"
+    elif args.model_type == "text":
+        entry_point = "text_module.py"
     return {
+        "MODEL_ENTRY_POINT": entry_point,
         "MODEL_NAME": args.model_name,
         "MODEL_URI": args.model_uri,
         "MAIN_MODULE_NAME": args.main_module_name,

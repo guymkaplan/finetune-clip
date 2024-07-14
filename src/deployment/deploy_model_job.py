@@ -17,6 +17,10 @@ sys.path.append("usr_code")
 
 @dataclass
 class DeployModelJobConfig:
+    model_entry_point: str = field(
+        default=None, metadata={
+            "help": "entry point for the model that is being deployed"}
+    )
     model_name: str = field(
         default=None, metadata={
             "help": "name of the model to be deployed"}
@@ -104,7 +108,7 @@ class DeployModelJob():
         packaged_model_uri = self._prepare_model_for_deployment(model_uri=self._config.model_uri,
                                                                 model_name=self._config.model_name)
         model = self._create_pytorch_model(model_name=self._config.model_name,
-                                           entry_point="module.py",
+                                           entry_point="text_module.py",
                                            source_dir=self._config.usr_code_dir,
                                            model_uri=packaged_model_uri
                                            )
@@ -122,6 +126,7 @@ class DeployModelJob():
             logging.info(f"Deployed model: {self._config.model_name}")
 
 if __name__ == '__main__':
+    model_entry_point = os.environ.get("MODEL_ENTRY_POINT")
     model_name = os.environ.get("MODEL_NAME")
     model_uri = os.environ.get("MODEL_URI")
     main_module_name = os.environ.get("MAIN_MODULE_NAME")
@@ -131,6 +136,7 @@ if __name__ == '__main__':
     deploy_model_as_endpoint = bool(os.environ.get("DEPLOY_MODEL_AS_ENDPOINT", False))
     usr_code_dir = os.environ.get("USR_CODE_DIR")
     config = DeployModelJobConfig(
+        model_entry_point=model_entry_point,
         model_name=model_name,
         model_uri=model_uri,
         main_module_name=main_module_name,
